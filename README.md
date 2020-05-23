@@ -1,7 +1,9 @@
-# node with typescript
+# CLI API.v1 - https://v1.module.land
+![](https://dev.azure.com/moduleland/website/_apis/build/status/v1_api-CI?branchName=master)
 
-## How to:
-1. **Download the zip** or execute `git clone https://github.com/darkaqua/node-with-typescript` in the terminal
-2. Run `npm install` in the **/node-with-typescript** directory
-3. Run `npm start` and test if the hello world works.
-4. Remove this shit and start your project with ts! :3
+## Utils
+- [mongo lib](https://www.npmjs.com/package/mongo-redux)
+- [regex online](https://regex101.com/)
+- [github api](https://developer.github.com/v4/)
+- [github api explorer](https://developer.github.com/v4/explorer/)
+- [search engine](https://google.com)
