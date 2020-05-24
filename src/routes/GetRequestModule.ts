@@ -9,6 +9,8 @@ import GetGraphql = ApiConnections.GetGraphql;
 import SearchRepo = RepoTypes.SearchRepo;
 import {ModuleTypes} from "../types/ModuleTypes";
 import Module = ModuleTypes.Module;
+import {CryptoUtils} from "../utils/CryptoUtils";
+import DecryptText = CryptoUtils.DecryptText;
 
 export default async (req: Request, res: Response, next: NextFunction) => {
     const {
@@ -35,8 +37,8 @@ export default async (req: Request, res: Response, next: NextFunction) => {
         const moduleUser: User = await mongo.get('users', 'id', module.creator_id);
 
         const repo = (await GetGraphql<SearchRepo>(
-            moduleUser.token_type,
-            moduleUser.access_token,
+            DecryptText(moduleUser.token_type),
+            DecryptText(moduleUser.access_token),
             RepoGraphql.GetRepo(login, name)
         )).repository;
 
