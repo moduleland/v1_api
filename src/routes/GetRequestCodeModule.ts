@@ -14,6 +14,8 @@ import SearchRepo = RepoTypes.SearchRepo;
 import GetRandomString = Utils.GetRandomString;
 import CreateHash = Utils.CreateHash;
 import Token = ModuleTypes.Token;
+import {CryptoUtils} from "../utils/CryptoUtils";
+import DecryptText = CryptoUtils.DecryptText;
 
 export default async (req: Request, res: Response, next: NextFunction) => {
     const {
@@ -51,8 +53,8 @@ export default async (req: Request, res: Response, next: NextFunction) => {
         const moduleUser: User = await mongo.get('users', 'id', module.creator_id);
 
         const repo = (await GetGraphql<SearchRepo>(
-            moduleUser.token_type,
-            moduleUser.access_token,
+            DecryptText(moduleUser.token_type),
+            DecryptText(moduleUser.access_token),
             RepoGraphql.GetRepo(login, name)
         )).repository;
 
@@ -69,12 +71,12 @@ export default async (req: Request, res: Response, next: NextFunction) => {
         const hash = CreateHash(token);
 
         const tokens: Array<Token> = [
-            ...(module?.tokens || []),
+            ...(module.tokens || []),
             {
                 created_at: Date.now(),
                 hash,
                 id: GetRandomString(16),
-                ip: req.headers['x-forwarded-for']?.toString() || req.connection.remoteAddress
+                ip: req.headers['x-forwarded-for'].toString() || req.connection.remoteAddress
             }
         ]
 

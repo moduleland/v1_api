@@ -1,11 +1,9 @@
 import {NextFunction, Request, Response} from "express";
 import {RepoTypes} from "../types/RepoTypes";
 import Repo = RepoTypes.Repo;
-import {UserTypes} from "../types/UserTypes";
-import User = UserTypes.User;
-import axios from "axios";
+import {GithubUtils} from "../utils/GithubUtils";
+import GetRawDataFromCreatorId = GithubUtils.GetRawDataFromCreatorId;
 
-const rawGithubURL = 'https://raw.githubusercontent.com/';
 
 export default async (req: Request, res: Response, next: NextFunction) => {
     const {
@@ -25,33 +23,29 @@ export default async (req: Request, res: Response, next: NextFunction) => {
         const module = modules[0];
         if(!module) return error('Module not found! If this module is yours, add it in module.land!');
 
-        const moduleUser: User = await mongo.get('users', 'id', module.creator_id);
-
-        let apiResponse;
         try {
-            apiResponse = (await axios.get(
-                `${rawGithubURL}${login}/${name}/${version}/${req.params[0]}`,
-                {
-                    headers: {
-                        'Authorization': `${moduleUser.token_type} ${moduleUser.access_token}`,
-                        'Accept': 'application/vnd.github.v3.raw'
-                    }
-                }
-            ));
+            const apiResponse = await GetRawDataFromCreatorId(
+                mongo,
+                module.creator_id,
+                login,
+                name,
+                version,
+                req.params[0]
+            );
+            [
+                'content-type',
+                'content-length'
+            ].forEach(k => {
+                res.setHeader(k, apiResponse.headers[k])
+            });
+            res.setHeader('X-Powered-By', 'module.land');
+
+            res.status(200).send(apiResponse.data);
         } catch (e) {
             return res
                 .status(e.response.status)
                 .send(e.response.statusText)
         }
-        [
-            'content-type',
-            'content-length'
-        ].forEach(k => {
-            res.setHeader(k, apiResponse.headers[k])
-        });
-        res.setHeader('X-Powered-By', 'module.land');
-
-        res.status(200).send(apiResponse.data);
     } catch (e) {
         console.error(e)
         return error();

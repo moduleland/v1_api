@@ -1,13 +1,10 @@
 import {NextFunction, Request, Response} from "express";
 import {ModuleTypes} from "../types/ModuleTypes";
 import Module = ModuleTypes.Module;
-import axios from "axios";
-import {UserTypes} from "../types/UserTypes";
-import User = UserTypes.User;
 import {Utils} from "../utils/Utils";
 import VerifyHash = Utils.VerifyHash;
-
-const rawGithubURL = 'https://raw.githubusercontent.com/';
+import {GithubUtils} from "../utils/GithubUtils";
+import GetRawDataFromCreatorId = GithubUtils.GetRawDataFromCreatorId;
 
 export default async (req: Request, res: Response, next: NextFunction) => {
     if(res.locals.module.token === 'public') return next();
@@ -43,33 +40,29 @@ export default async (req: Request, res: Response, next: NextFunction) => {
         if(!module.tokens || !module.tokens.some(_token => VerifyHash(token, _token.hash)))
             return error('The token is not valid.', 401);
 
-        const moduleUser: User = await mongo.get('users', 'id', module.creator_id);
-
-        let apiResponse;
         try {
-            apiResponse = (await axios.get(
-                `${rawGithubURL}${login}/${name}/${version}/${req.params[0]}`,
-                {
-                    headers: {
-                        'Authorization': `${moduleUser.token_type} ${moduleUser.access_token}`,
-                        'Accept': 'application/vnd.github.v3.raw'
-                    }
-                }
-            ));
+            const apiResponse = await GetRawDataFromCreatorId(
+                mongo,
+                module.creator_id,
+                login,
+                name,
+                version,
+                req.params[0]
+            );
+            [
+                'content-type',
+                'content-length'
+            ].forEach(k => {
+                res.setHeader(k, apiResponse.headers[k])
+            });
+            res.setHeader('X-Powered-By', 'module.land');
+
+            res.status(200).send(apiResponse.data);
         } catch (e) {
             return res
                 .status(e.response.status)
                 .send(e.response.statusText)
         }
-        [
-            'content-type',
-            'content-length'
-        ].forEach(k => {
-            res.setHeader(k, apiResponse.headers[k])
-        });
-        res.setHeader('X-Powered-By', 'module.land');
-
-        res.status(200).send(apiResponse.data);
     } catch (e) {
         console.error(e)
         return error();
